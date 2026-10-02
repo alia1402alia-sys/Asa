@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>مغامرة باب التبرير والبرهان</title>
+<style>
+:root{--ink:#17223b;--panel:rgba(255,255,255,.94);--accent:#6b4eff;--gold:#ffcc3d}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;font-family:Tahoma,Arial,sans-serif;background:#dff4ff;color:var(--ink);overflow:hidden}
+button{font:inherit}
+#app{height:100%;display:flex;flex-direction:column}
+#hud{height:84px;padding:10px 14px;background:linear-gradient(180deg,#ffffffee,#ffffffbb);display:flex;align-items:center;gap:12px;z-index:5;box-shadow:0 5px 18px #0002}
+.badge{background:#fff;border:2px solid #dfe7ff;border-radius:18px;padding:8px 12px;font-weight:800;white-space:nowrap}
+#progressWrap{flex:1;min-width:120px}
+#progressLabel{font-size:14px;font-weight:800;margin-bottom:6px}
+#progress{height:14px;background:#e7ecff;border-radius:20px;overflow:hidden;border:1px solid #c8d1ff}
+#progressBar{height:100%;width:0;background:linear-gradient(90deg,#6b4eff,#31d6c8,#ffcf4d);transition:.3s}
+.soundBtns{display:flex;gap:6px}
+.smallBtn{border:none;border-radius:14px;padding:8px 10px;background:#fff;box-shadow:0 2px 8px #0002}
+#gameWrap{position:relative;flex:1;min-height:0;background:linear-gradient(#82d4ff 0 58%,#d9f6b8 58% 100%)}
+canvas{width:100%;height:100%;display:block;touch-action:none}
+#titleScreen,#questionModal,#winScreen{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#5e78f6dd,#74d7e8dd);z-index:10;padding:18px}
+.card{width:min(780px,94vw);background:var(--panel);border-radius:30px;padding:28px;box-shadow:0 18px 50px #12285a55;border:2px solid #ffffff}
+h1{margin:0 0 12px;font-size:clamp(30px,5vw,58px);color:#4b3bd3;text-align:center}
+.sub{font-size:clamp(17px,2.4vw,24px);line-height:1.8;text-align:center}
+.primary{display:block;margin:22px auto 0;border:0;border-radius:18px;padding:16px 30px;background:linear-gradient(135deg,#6b4eff,#35cdd0);color:#fff;font-size:22px;font-weight:900;box-shadow:0 8px 0 #4035a9;cursor:pointer}
+.primary:active{transform:translateY(4px);box-shadow:0 4px 0 #4035a9}
+#questionModal,#winScreen{display:none;background:#0d183a88;backdrop-filter:blur(3px)}
+#qNum{font-weight:900;color:#6b4eff;margin-bottom:8px}
+#qText{font-size:clamp(22px,3.2vw,34px);font-weight:900;line-height:1.55;margin:8px 0 18px;text-align:center}
+.options{display:grid;gap:12px}
+.option{border:2px solid #d6dcff;background:#fff;border-radius:18px;padding:15px 18px;font-size:clamp(18px,2.5vw,26px);font-weight:800;cursor:pointer;min-height:58px}
+.option:hover{border-color:#8c7cff}
+.option.correct{background:#dff8e7;border-color:#2bb673}
+.option.wrong{background:#ffe4e4;border-color:#e35d5d}
+#feedback{text-align:center;min-height:34px;margin-top:10px;font-size:20px;font-weight:900}
+#touch{position:absolute;left:0;right:0;bottom:12px;display:flex;justify-content:space-between;align-items:end;padding:0 14px;z-index:6;pointer-events:none}
+.touchGroup{display:flex;gap:10px;pointer-events:auto}
+.touchBtn{width:72px;height:72px;border:none;border-radius:50%;background:#ffffffd9;box-shadow:0 6px 18px #0003;font-size:27px;font-weight:900;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:pointer}
+#jumpBtn{width:82px;height:82px;background:#fff7cf}
+.hint{font-size:14px;text-align:center;opacity:.75;margin-top:14px}
+#winTitle{font-size:clamp(34px,6vw,64px);text-align:center;margin:0;color:#d69a00}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:18px 0}
+.stat{padding:14px;background:#f5f7ff;border-radius:16px;font-weight:900;text-align:center}
+.rowBtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.secondary{border:0;border-radius:16px;padding:13px 18px;font-weight:900;background:#edf0ff;color:#4035a9}
+@media (max-width:680px){
+#hud{height:105px;flex-wrap:wrap;gap:6px;padding:7px}
+.badge{font-size:13px;padding:6px 8px}
+#progressWrap{order:3;flex-basis:100%}
+.card{padding:20px;border-radius:24px}
+.touchBtn{width:64px;height:64px}
+#jumpBtn{width:72px;height:72px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+ <div id="hud">
+ <div class="badge">⭐ <span id="stars">0</span></div>
+ <div class="badge">🏆 <span id="score">0</span></div>
+ <div class="badge">📝 <span id="current">0</span>/40</div>
+ <div id="progressWrap"><div id="progressLabel">التقدم في المغامرة</div><div id="progress"><div id="progressBar"></div></div></div>
+ <div class="soundBtns">
+ <button class="smallBtn" id="musicBtn">🎵 تشغيل</button>
+ <button class="smallBtn" id="sfxBtn">🔊 تشغيل</button>
+ </div>
+ </div>
+
+
+ <div id="gameWrap">
+ <canvas id="game"></canvas>
+ <div id="titleScreen">
+ <div class="card">
+ <h1>🏆 مغامرة باب التبرير والبرهان</h1>
+ <div class="sub">لطالبات الصف الأول الثانوي – رياضيات 1-1<br>تحركي، اقفزي، اجمعي النجوم، وأجيبي عن 40 سؤالًا حتى تصلي إلى الكأس.</div>
+ <button class="primary" id="startBtn">ابدأ اللعبة</button>
+ <div class="hint">الكمبيوتر: ← → للحركة، ↑ أو Space للقفز. الهاتف والآيباد: استخدمي أزرار اللمس.</div>
+ </div>
+ </div>
+
+
+ <div id="questionModal">
+ <div class="card">
+ <div id="qNum">السؤال 1 من 40</div>
+ <div id="qText"></div>
+ <div class="options" id="options"></div>
+ <div id="feedback"></div>
+ </div>
+ </div>
+
+
+ <div id="winScreen">
+ <div class="card">
+ <div id="winTitle">🎉 أحسنتِ!</div>
+ <div class="sub"><b>لقد أتممتِ مغامرة باب التبرير والبرهان بنجاح</b><br>أنتِ بطلة التبرير والبرهان 🏆⭐</div>
+ <div class="stats">
+ <div class="stat">الإجابات الصحيحة<br><span id="finalCorrect"></span></div>
+ <div class="stat">عدد المحاولات<br><span id="finalAttempts"></span></div>
+ <div class="stat">النجوم<br><span id="finalStars"></span></div>
+ <div class="stat">النتيجة<br><span id="finalScore"></span></div>
+ </div>
+ <div class="rowBtns">
+ <button class="primary" id="againBtn" style="margin:0">🔄 العب مرة أخرى</button>
+ <button class="secondary" id="homeBtn">🏠 العودة إلى البداية</button>
+ </div>
+ </div>
+ </div>
+
+
+ <div id="touch">
+ <div class="touchGroup">
+ <button class="touchBtn" id="leftBtn">◀</button>
+ <button class="touchBtn" id="rightBtn">▶</button>
+ </div>
+ <button class="touchBtn" id="jumpBtn">⬆</button>
+ </div>
+ </div>
+</div>
+
+
+<script>
+const QUESTIONS = [{"q": "التبرير الذي يستعمل أمثلة وأنماطًا محددة للوصول إلى نتيجة هو:", "opts": ["التبرير الاستقرائي", "التبرير الاستنتاجي", "البرهان الحر"], "a": 0}, {"q": "العبارة النهائية التي يتم التوصل إليها باستعمال التبرير الاستقرائي تسمى:", "opts": ["تخمينًا", "مسلمة", "نظرية"], "a": 0}, {"q": "لإثبات أن تخمينًا ما غير صحيح يكفي:", "opts": ["مثال مضاد واحد", "ثلاثة أمثلة مؤيدة", "جدول صواب فقط"], "a": 0}, {"q": "ناتج جمع عددين فرديين هو:", "opts": ["عدد زوجي", "عدد أولي دائمًا", "عدد فردي"], "a": 0}, {"q": "الحد التالي في المتتابعة 4، 8، 12، 16، 20 هو:", "opts": ["24", "22", "28"], "a": 0}, {"q": "الحد التالي في المتتابعة 3، 6، 9، 12، 15 هو:", "opts": ["18", "17", "21"], "a": 0}, {"q": "مواعيد الحافلة: 8:30، 9:10، 9:50، 10:30. الموعد التالي هو:", "opts": ["11:10", "10:50", "11:30"], "a": 0}, {"q": "ما المثال المضاد للتخمين: «جميع الأعداد الأولية فردية»؟", "opts": ["2", "3", "5"], "a": 0}, {"q": "الجملة الخبرية التي تكون إما صائبة أو خاطئة تسمى:", "opts": ["عبارة", "فرضًا", "برهانًا"], "a": 0}, {"q": "صواب العبارة أو خطؤها يسمى:", "opts": ["قيمة الصواب", "التخمين", "النتيجة"], "a": 0}, {"q": "إذا كانت العبارة p صائبة، فإن نفيها ~p يكون:", "opts": ["خاطئًا", "صائبًا", "غير محدد"], "a": 0}, {"q": "عبارة الوصل تحتوي على الرابط:", "opts": ["و", "أو", "إذا... فإن"], "a": 0}, {"q": "تكون عبارة الوصل صائبة عندما:", "opts": ["تكون جميع العبارات المكوِّنة لها صائبة", "تكون عبارة واحدة فقط صائبة", "تكون جميع العبارات خاطئة"], "a": 0}, {"q": "عبارة الفصل تحتوي على الرابط:", "opts": ["أو", "و", "ليس"], "a": 0}, {"q": "تكون عبارة الفصل خاطئة عندما:", "opts": ["تكون جميع العبارات المكوِّنة لها خاطئة", "تكون إحداها صائبة", "تكون جميعها صائبة"], "a": 0}, {"q": "إذا كانت p صائبة و q خاطئة، فإن p ∧ q تكون:", "opts": ["خاطئة", "صائبة", "لا يمكن تحديدها"], "a": 0}, {"q": "إذا كانت p صائبة و q خاطئة، فإن p ∨ q تكون:", "opts": ["صائبة", "خاطئة", "لا يمكن تحديدها"], "a": 0}, {"q": "تكتب العبارة الشرطية لفظيًا على الصورة:", "opts": ["إذا ... فإن ...", "... و ...", "... أو ..."], "a": 0}, {"q": "في العبارة «إذا كان p فإن q»، تسمى p:", "opts": ["الفرض", "النتيجة", "المعاكس الإيجابي"], "a": 0}, {"q": "في العبارة «إذا كان p فإن q»، تسمى q:", "opts": ["النتيجة", "الفرض", "المعكوس"], "a": 0}, {"q": "تكون العبارة الشرطية خاطئة فقط عندما يكون:", "opts": ["الفرض صائبًا والنتيجة خاطئة", "الفرض خاطئًا والنتيجة صائبة", "الفرض والنتيجة خاطئين"], "a": 0}, {"q": "ينتج العكس للعبارة الشرطية عن:", "opts": ["تبديل الفرض والنتيجة", "نفي الفرض فقط", "نفي النتيجة فقط"], "a": 0}, {"q": "ينتج المعكوس للعبارة الشرطية عن:", "opts": ["نفي الفرض والنتيجة دون تبديلهما", "تبديل الفرض والنتيجة فقط", "نفي النتيجة وتبديلها"], "a": 0}, {"q": "المعاكس الإيجابي ينتج عن:", "opts": ["نفي الفرض والنتيجة ثم تبديلهما", "تبديل الفرض والنتيجة فقط", "نفي الفرض فقط"], "a": 0}, {"q": "العبارة الشرطية تكافئ منطقيًا:", "opts": ["معاكسها الإيجابي", "عكسها دائمًا", "معكوسها دائمًا"], "a": 0}, {"q": "التبرير الذي يستعمل حقائق وتعريفات وقوانين للوصول إلى نتيجة منطقية هو:", "opts": ["التبرير الاستنتاجي", "التبرير الاستقرائي", "التخمين"], "a": 0}, {"q": "إذا كانت p→q صائبة وكانت p صائبة، نستنتج q باستعمال:", "opts": ["قانون الفصل المنطقي", "قانون القياس المنطقي", "التبرير الاستقرائي"], "a": 0}, {"q": "إذا كانت p→q و q→r صائبتين، فإن p→r وفق:", "opts": ["قانون القياس المنطقي", "قانون الفصل المنطقي", "المثال المضاد"], "a": 0}, {"q": "إذا كان قياس زاوية أكبر من 90° فهي منفرجة، وإذا كانت منفرجة فهي ليست قائمة. نستنتج أنها ليست قائمة باستعمال:", "opts": ["قانون القياس المنطقي", "المثال المضاد", "التبرير الاستقرائي"], "a": 0}, {"q": "العبارة التي تُقبل على أنها صحيحة دون برهان تسمى:", "opts": ["مسلمة", "نظرية", "تخمينًا"], "a": 0}, {"q": "العبارة التي تم إثبات صحتها تسمى:", "opts": ["نظرية", "مسلمة", "قيمة صواب"], "a": 0}, {"q": "البرهان هو:", "opts": ["دليل منطقي تُبرَّر فيه كل عبارة", "مجموعة أمثلة فقط", "تخمين غير مبرر"], "a": 0}, {"q": "في البرهان ذي العمودين، الخصائص التي تبرر كل خطوة تسمى:", "opts": ["المبررات", "الفروض", "التخمينات"], "a": 0}, {"q": "القطعة المستقيمة تطابق نفسها. هذه خاصية:", "opts": ["الانعكاس للتطابق", "التماثل للتطابق", "التعدي للتطابق"], "a": 0}, {"q": "إذا كان AB ≅ CD فإن CD ≅ AB. هذه خاصية:", "opts": ["التماثل للتطابق", "الانعكاس للتطابق", "التعدي للتطابق"], "a": 0}, {"q": "إذا كان AB ≅ CD و CD ≅ EF فإن AB ≅ EF. هذه خاصية:", "opts": ["التعدي للتطابق", "التماثل للتطابق", "الانعكاس للتطابق"], "a": 0}, {"q": "إذا تقاطع مستقيمان فإنهما يتقاطعان في:", "opts": ["نقطة واحدة", "مستقيم", "مستويين"], "a": 0}, {"q": "إذا تقاطع مستويان فإن تقاطعهما يكون:", "opts": ["مستقيمًا", "نقطة فقط", "مستويًا ثالثًا"], "a": 0}, {"q": "الزاويتان المتكاملتان مجموع قياسيهما:", "opts": ["180°", "90°", "360°"], "a": 0}, {"q": "الزاويتان المتقابلتان بالرأس تكونان:", "opts": ["متطابقتين", "متتامتين دائمًا", "متجاورتين دائمًا"], "a": 0}];
+
+
+const canvas=document.getElementById('game'), ctx=canvas.getContext('2d');
+const titleScreen=document.getElementById('titleScreen'), questionModal=document.getElementById('questionModal'), winScreen=document.getElementById('winScreen');
+const qText=document.getElementById('qText'), qNum=document.getElementById('qNum'), optionsEl=document.getElementById('options'), feedback=document.getElementById('feedback');
+const starsEl=document.getElementById('stars'), scoreEl=document.getElementById('score'), currentEl=document.getElementById('current'), progressBar=document.getElementById('progressBar');
+let W=0,H=0,dpr=1, groundY=0, running=false, paused=true, won=false;
+let qi=0, stars=0, score=0, attempts=0, correct=0;
+let cameraX=0, worldWidth=0, keys={left:false,right:false};
+let player={x:80,y:0,w:42,h:62,vx:0,vy:0,onGround:false};
+let starItems=[], obstacles=[], trophyX=0;
+
+
+function resize(){
+ dpr=Math.min(devicePixelRatio||1,2); W=canvas.clientWidth; H=canvas.clientHeight;
+ canvas.width=W*dpr; canvas.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+ groundY=H-95; if(!running) player.y=groundY-player.h;
+}
+addEventListener('resize',resize); resize();
+
+
+function buildWorld(){
+ worldWidth=Math.max(5200, QUESTIONS.length*130+700); trophyX=worldWidth-240;
+ starItems=[]; obstacles=[];
+ for(let i=0;i<QUESTIONS.length;i++){
+ starItems.push({x:320+i*125,y:groundY-105-(i%3)*22,taken:false});
+ if(i%4===2) obstacles.push({x:375+i*125,y:groundY-38,w:45,h:38});
+ }
+}
+function resetGame(showTitle=false){
+ qi=0;stars=0;score=0;attempts=0;correct=0;won=false;cameraX=0;keys.left=keys.right=false;
+ player.x=80;player.y=groundY-player.h;player.vx=0;player.vy=0;
+ buildWorld(); updateHUD();
+ questionModal.style.display='none';winScreen.style.display='none';
+ titleScreen.style.display=showTitle?'flex':'none';
+ running=!showTitle;paused=showTitle;
+}
+function updateHUD(){
+ starsEl.textContent=stars;scoreEl.textContent=score;currentEl.textContent=qi;
+ progressBar.style.width=(qi/40*100)+'%';
+}
+function shuffleOptions(q){
+ const arr=q.opts.map((t,i)=>({t,ok:i===q.a}));
+ for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}
+ return arr;
+}
+function showQuestion(){
+ if(qi>=QUESTIONS.length)return;
+ paused=true; questionModal.style.display='flex'; feedback.textContent='';
+ const q=QUESTIONS[qi]; qNum.textContent=`السؤال ${qi+1} من 40`; qText.textContent=q.q; optionsEl.innerHTML='';
+ if(musicOn) setMusicGain(.035);
+ shuffleOptions(q).forEach((o,idx)=>{
+ const b=document.createElement('button'); b.className='option'; b.textContent=`${String.fromCharCode(65+idx)}) ${o.t}`;
+ b.onclick=()=>answer(o.ok,b); optionsEl.appendChild(b);
+ });
+ playSfx('star');
+}
+function answer(ok,btn){
+ attempts++;
+ if(ok){
+ correct++;stars++;score+=100; btn.classList.add('correct'); feedback.textContent='أحسنتِ! إجابة صحيحة ⭐';
+ playSfx('correct');
+ [...optionsEl.children].forEach(x=>x.disabled=true);
+ setTimeout(()=>{
+ starItems[qi].taken=true; qi++; updateHUD(); questionModal.style.display='none'; paused=false; if(musicOn)setMusicGain(.08);
+ if(qi===QUESTIONS.length){ player.x=Math.max(player.x,trophyX-350); }
+ },650);
+ }else{
+ btn.classList.add('wrong'); btn.disabled=true; feedback.textContent='حاولي مرة أخرى 🌷'; playSfx('wrong');
+ setTimeout(()=>{btn.classList.remove('wrong');btn.disabled=false;feedback.textContent='';},650);
+ }
+}
+function endGame(){
+ if(won)return; won=true;paused=true;score+=500;updateHUD();playSfx('win'); if(musicOn)setMusicGain(.025);
+ document.getElementById('finalCorrect').textContent=`${correct} / 40`;
+ document.getElementById('finalAttempts').textContent=attempts;
+ document.getElementById('finalStars').textContent=stars;
+ document.getElementById('finalScore').textContent=score;
+ winScreen.style.display='flex'; confettiBurst();
+}
+
+
+function drawBackground(){
+ let grad=ctx.createLinearGradient(0,0,0,H);grad.addColorStop(0,'#7dd4ff');grad.addColorStop(.58,'#d9f5ff');grad.addColorStop(.581,'#bde88a');grad.addColorStop(1,'#72bf62');ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+ // clouds
+ ctx.fillStyle='#ffffffaa';
+ for(let i=0;i<6;i++){let x=((i*260-cameraX*.15)% (W+300))-100;let y=55+(i%3)*55;ctx.beginPath();ctx.arc(x,y,28,0,7);ctx.arc(x+28,y-10,35,0,7);ctx.arc(x+62,y,26,0,7);ctx.fill();}
+ // math symbols
+ ctx.fillStyle='#4559b622';ctx.font='bold 46px Tahoma';
+ ['p','q','∠','=','≅','T','F'].forEach((s,i)=>ctx.fillText(s, ((i*180-cameraX*.08)%(W+150))-40, 160+(i%2)*70));
+ // ground
+ ctx.fillStyle='#4f9b4c';ctx.fillRect(0,groundY,W,H-groundY);ctx.fillStyle='#e9c77c';ctx.fillRect(0,groundY,W,14);
+}
+function drawWorld(){
+ ctx.save();ctx.translate(-cameraX,0);
+ // gates
+ for(let x=700;x<trophyX;x+=900){ctx.fillStyle='#6b4eff33';ctx.fillRect(x,groundY-160,16,160);ctx.fillRect(x+90,groundY-160,16,160);ctx.fillRect(x,groundY-160,106,16);}
+ obstacles.forEach(o=>{ctx.fillStyle='#a5673f';ctx.fillRect(o.x,o.y,o.w,o.h);ctx.fillStyle='#7b4d2f';ctx.fillRect(o.x+8,o.y+8,o.w-16,8)});
+ starItems.forEach((s,i)=>{if(s.taken)return;ctx.save();ctx.translate(s.x,s.y);ctx.rotate(performance.now()/900+i);ctx.font='34px serif';ctx.fillText('⭐',-17,12);ctx.restore();});
+ // trophy
+ ctx.font='64px serif';ctx.fillText('🏆',trophyX,groundY-32);
+ ctx.fillStyle='#5b3ed0';ctx.font='bold 18px Tahoma';ctx.fillText('نهاية المغامرة',trophyX-25,groundY-100);
+ // player
+ drawPlayer(player.x,player.y);
+ ctx.restore();
+}
+function drawPlayer(x,y){
+ ctx.save();ctx.translate(x,y);
+ // shadow
+ ctx.fillStyle='#0002';ctx.beginPath();ctx.ellipse(21,62,24,7,0,0,Math.PI*2);ctx.fill();
+ // legs
+ ctx.fillStyle='#25345c';ctx.fillRect(11,43,8,18);ctx.fillRect(25,43,8,18);
+ // body uniform
+ ctx.fillStyle='#f2f6ff';ctx.fillRect(9,22,27,27);ctx.fillStyle='#6b4eff';ctx.fillRect(9,34,27,15);
+ // head
+ ctx.fillStyle='#f2c7a5';ctx.beginPath();ctx.arc(22,14,13,0,Math.PI*2);ctx.fill();
+ // hair
+ ctx.fillStyle='#3b2a27';ctx.beginPath();ctx.arc(22,11,14,Math.PI,Math.PI*2);ctx.fill();ctx.fillRect(8,10,5,17);ctx.fillRect(31,10,5,17);
+ // face
+ ctx.fillStyle='#222';ctx.fillRect(17,13,2,2);ctx.fillRect(26,13,2,2);ctx.fillStyle='#c76a6a';ctx.fillRect(21,18,5,2);
+ ctx.restore();
+}
+function update(dt){
+ if(paused||!running||won)return;
+ player.vx=0;if(keys.left)player.vx=-220;if(keys.right)player.vx=220;
+ player.vy+=980*dt; player.x+=player.vx*dt;player.y+=player.vy*dt;
+ player.x=Math.max(0,Math.min(worldWidth-player.w,player.x));
+ if(player.y+player.h>=groundY){player.y=groundY-player.h;player.vy=0;player.onGround=true}else player.onGround=false;
+ // obstacle collision simplified
+ obstacles.forEach(o=>{
+ if(player.x+player.w>o.x&&player.x<o.x+o.w&&player.y+player.h>o.y&&player.y<o.y+o.h){
+ if(player.vy>=0 && player.y+player.h-o.y<26){player.y=o.y-player.h;player.vy=0;player.onGround=true}
+ else if(player.vx>0)player.x=o.x-player.w; else if(player.vx<0)player.x=o.x+o.w;
+ }
+ });
+ if(qi<starItems.length){
+ const s=starItems[qi], dx=(player.x+player.w/2)-s.x, dy=(player.y+player.h/2)-s.y;
+ if(Math.abs(dx)<38&&Math.abs(dy)<60&&!s.taken)showQuestion();
+ }
+ if(qi===QUESTIONS.length && player.x>trophyX-40)endGame();
+ const target=Math.max(0,Math.min(worldWidth-W,player.x-W*.35));cameraX+=(target-cameraX)*.08;
+}
+function jump(){if(!paused&&player.onGround){player.vy=-470;player.onGround=false;playSfx('jump')}}
+addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowUp',' '].includes(e.key))e.preventDefault();if(e.key==='ArrowLeft')keys.left=true;if(e.key==='ArrowRight')keys.right=true;if(e.key==='ArrowUp'||e.key===' ')jump()},{passive:false});
+addEventListener('keyup',e=>{if(e.key==='ArrowLeft')keys.left=false;if(e.key==='ArrowRight')keys.right=false});
+function bindHold(id,key){const el=document.getElementById(id);let down=()=>{keys[key]=true},up=()=>{keys[key]=false};el.addEventListener('pointerdown',e=>{e.preventDefault();down()});['pointerup','pointercancel','pointerleave'].forEach(ev=>el.addEventListener(ev,up));}
+bindHold('leftBtn','left');bindHold('rightBtn','right');
+const jumpBtn=document.getElementById('jumpBtn');
+function handleJump(e){
+  if(e){e.preventDefault();e.stopPropagation();}
+  jump();
+}
+// دعم موثوق للآيباد/الآيفون والجوال والكمبيوتر
+jumpBtn.addEventListener('pointerdown',handleJump,{passive:false});
+jumpBtn.addEventListener('touchstart',handleJump,{passive:false});
+jumpBtn.addEventListener('click',handleJump);
+
+
+let last=performance.now();function loop(t){const dt=Math.min((t-last)/1000,.03);last=t;drawBackground();drawWorld();update(dt);requestAnimationFrame(loop)}requestAnimationFrame(loop);
+
+
+// Audio: generated locally with Web Audio API (Safari-friendly after user gesture)
+let ac=null,musicOn=true,sfxOn=true,musicTimer=null,musicGain=null;
+function ensureAudio(){if(!ac){ac=new (window.AudioContext||window.webkitAudioContext)();musicGain=ac.createGain();musicGain.gain.value=.08;musicGain.connect(ac.destination)} if(ac.state==='suspended')ac.resume();}
+function tone(freq,dur,type='sine',vol=.08,when=0){
+ if(!ac)return;const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=freq;g.gain.value=vol;o.connect(g);g.connect(ac.destination);const st=ac.currentTime+when;o.start(st);g.gain.exponentialRampToValueAtTime(.001,st+dur);o.stop(st+dur);
+}
+function playSfx(kind){
+ if(!sfxOn)return;ensureAudio();
+ if(kind==='jump')tone(520,.12,'square',.04);
+ if(kind==='star'){tone(780,.08,'sine',.05);tone(1040,.1,'sine',.04,.07)}
+ if(kind==='correct'){tone(660,.11,'sine',.06);tone(880,.13,'sine',.06,.1);tone(1100,.16,'sine',.05,.21)}
+ if(kind==='wrong'){tone(240,.13,'triangle',.045);tone(190,.18,'triangle',.035,.12)}
+ if(kind==='win'){[523,659,784,1047].forEach((f,i)=>tone(f,.3,'sine',.07,i*.16))}
+}
+function setMusicGain(v){if(musicGain&&ac)musicGain.gain.setTargetAtTime(v,ac.currentTime,.08)}
+function startMusic(){
+ ensureAudio(); if(musicTimer)clearInterval(musicTimer);
+ const seq=[262,330,392,523,392,330,294,349,440,587,440,349];let i=0;
+ musicTimer=setInterval(()=>{if(!musicOn||!ac)return;const o=ac.createOscillator(),g=ac.createGain();o.type='triangle';o.frequency.value=seq[i++%seq.length];g.gain.value=.045;o.connect(g);g.connect(musicGain);o.start();g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.28);o.stop(ac.currentTime+.29)},300);
+}
+document.getElementById('musicBtn').onclick=()=>{ensureAudio();musicOn=!musicOn;document.getElementById('musicBtn').textContent=musicOn?'🎵 تشغيل':'🎵 كتم';if(musicOn){setMusicGain(paused?.035:.08);startMusic()}else setMusicGain(.0001)};
+document.getElementById('sfxBtn').onclick=()=>{ensureAudio();sfxOn=!sfxOn;document.getElementById('sfxBtn').textContent=sfxOn?'🔊 تشغيل':'🔇 كتم'};
+
+
+document.getElementById('startBtn').onclick=()=>{ensureAudio();startMusic();resetGame(false);running=true;paused=false;titleScreen.style.display='none'};
+document.getElementById('againBtn').onclick=()=>{resetGame(false);running=true;paused=false;if(musicOn){ensureAudio();startMusic();setMusicGain(.08)}};
+document.getElementById('homeBtn').onclick=()=>{resetGame(true)};
+function confettiBurst(){
+ const until=performance.now()+2500;const pieces=Array.from({length:80},()=>({x:Math.random()*W,y:-Math.random()*H,c:`hsl(${Math.random()*360},80%,60%)`,v:2+Math.random()*4}));
+ function f(){if(performance.now()>until)return;ctx.save();pieces.forEach(p=>{p.y+=p.v;ctx.fillStyle=p.c;ctx.fillRect(p.x,p.y,7,11)});ctx.restore();requestAnimationFrame(f)}f();
+}
+buildWorld();resetGame(true);
+</script>
+</body>
+</html>
